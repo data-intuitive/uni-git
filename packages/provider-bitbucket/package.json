@@ -1,0 +1,45 @@
+{
+  "name": "@uni-git/provider-bitbucket",
+  "version": "0.0.1",
+  "description": "Bitbucket provider for unified Git API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "git",
+    "bitbucket",
+    "api",
+    "typescript"
+  ],
+  "author": "Data Intuitive",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "bitbucket": "^2"
+  },
+  "dependencies": {
+    "@uni-git/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^2"
+  }
+}

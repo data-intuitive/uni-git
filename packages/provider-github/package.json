@@ -1,0 +1,51 @@
+{
+  "name": "@uni-git/provider-github",
+  "version": "0.0.1",
+  "description": "GitHub provider for unified Git API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "git",
+    "github",
+    "api",
+    "typescript"
+  ],
+  "author": "Data Intuitive",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "@octokit/rest": "^21",
+    "@octokit/auth-app": "^7"
+  },
+  "peerDependenciesMeta": {
+    "@octokit/auth-app": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@uni-git/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^2"
+  }
+}

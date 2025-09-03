@@ -1,0 +1,45 @@
+{
+  "name": "@uni-git/workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/*' run build",
+    "clean": "pnpm -r --filter './packages/*' run clean",
+    "lint": "eslint .",
+    "format": "prettier -w .",
+    "typecheck": "tsc -b packages/*",
+    "test": "pnpm -r --filter './packages/*' run test",
+    "release": "changeset version && pnpm install && pnpm -r build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2",
+    "@commitlint/cli": "^19",
+    "@commitlint/config-conventional": "^19",
+    "@eslint/js": "^9",
+    "@types/node": "^20",
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8",
+    "@vitest/coverage-v8": "^2",
+    "eslint": "^9.34.0",
+    "eslint-config-prettier": "^9",
+    "eslint-plugin-import": "^2",
+    "eslint-plugin-unused-imports": "^4",
+    "globals": "^16.3.0",
+    "husky": "^9",
+    "lint-staged": "^15",
+    "prettier": "^3",
+    "typescript": "^5",
+    "typescript-eslint": "^8.42.0",
+    "vitest": "^2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

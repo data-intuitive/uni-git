@@ -1,0 +1,30 @@
+{
+  "name": "node-basic-example",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --loader ts-node/esm src/index.ts",
+    "build": "tsc",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@uni-git/core": "workspace:*",
+    "@uni-git/unified": "workspace:*",
+    "@uni-git/provider-github": "workspace:*",
+    "@uni-git/provider-gitlab": "workspace:*",
+    "@uni-git/provider-bitbucket": "workspace:*",
+    "@octokit/rest": "^21",
+    "@octokit/auth-app": "^7",
+    "@gitbeaker/rest": "^40",
+    "bitbucket": "^2",
+    "dotenv": "^16"
+  },
+  "devDependencies": {
+    "tsx": "^4",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

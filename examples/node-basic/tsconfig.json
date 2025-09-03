@@ -1,0 +1,30 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "noEmit": true,
+    "lib": ["ES2022"],
+    "types": ["node"]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "references": [
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/unified"
+    },
+    {
+      "path": "../../packages/provider-github"
+    },
+    {
+      "path": "../../packages/provider-gitlab"
+    },
+    {
+      "path": "../../packages/provider-bitbucket"
+    }
+  ]
+}
