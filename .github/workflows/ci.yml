@@ -49,10 +49,64 @@ jobs:
         env:
           CI: true
 
+  integration-test:
+    name: Integration Tests (${{ matrix.provider }})
+    runs-on: ubuntu-latest
+    # Only run integration tests on main repo (not forks) where secrets are available
+    if: github.repository == 'data-intuitive/uni-git' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    
+    strategy:
+      matrix:
+        provider: [github, gitlab, bitbucket, unified]
+      # Allow integration tests to fail without blocking the pipeline
+      fail-fast: false
+    
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Enable Corepack
+        run: corepack enable
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Build packages
+        run: pnpm build
+      
+      - name: Run ${{ matrix.provider }} Integration Tests
+        run: pnpm test:integration:${{ matrix.provider }}
+        env:
+          CI: true
+          # GitHub credentials
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_APP_ID: ${{ secrets.INTEGRATION_GITHUB_APP_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.INTEGRATION_GITHUB_APP_PRIVATE_KEY }}
+          # GITHUB_APP_INSTALLATION_ID: ${{ secrets.INTEGRATION_GITHUB_APP_INSTALLATION_ID }}
+          # GitLab credentials
+          GITLAB_TOKEN: ${{ secrets.INTEGRATION_GITLAB_TOKEN }}
+          # GITLAB_OAUTH_TOKEN: ${{ secrets.INTEGRATION_GITLAB_OAUTH_TOKEN }}
+          # Bitbucket credentials
+          BITBUCKET_USERNAME: ${{ secrets.INTEGRATION_BITBUCKET_USERNAME }}
+          BITBUCKET_APP_PASSWORD: ${{ secrets.INTEGRATION_BITBUCKET_APP_PASSWORD }}
+          # BITBUCKET_OAUTH_TOKEN: ${{ secrets.INTEGRATION_BITBUCKET_OAUTH_TOKEN }}
+          # # Self-hosted instances (optional)
+          # GITHUB_BASE_URL: ${{ secrets.INTEGRATION_GITHUB_BASE_URL }}
+          # GITLAB_HOST: ${{ secrets.INTEGRATION_GITLAB_HOST }}
+
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, integration-test]
     if: github.ref == 'refs/heads/main'
     
     steps:

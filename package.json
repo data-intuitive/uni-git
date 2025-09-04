@@ -10,6 +10,11 @@
     "format": "prettier -w .",
     "typecheck": "tsc -b packages/*",
     "test": "pnpm -r --filter './packages/*' run test",
+    "test:integration": "pnpm -r --filter './packages/*' run test:integration",
+    "test:integration:github": "pnpm --filter '@uni-git/provider-github' run test:integration",
+    "test:integration:gitlab": "pnpm --filter '@uni-git/provider-gitlab' run test:integration",
+    "test:integration:bitbucket": "pnpm --filter '@uni-git/provider-bitbucket' run test:integration",
+    "test:integration:unified": "pnpm --filter '@uni-git/unified' run test:integration",
     "release": "changeset version && pnpm install && pnpm -r build && changeset publish"
   },
   "devDependencies": {
@@ -41,5 +46,6 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "packageManager": "pnpm@10.9.0"
 }

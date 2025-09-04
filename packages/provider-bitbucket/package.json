@@ -19,7 +19,8 @@
     "clean": "rm -rf dist *.tsbuildinfo",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --reporter=verbose --testNamePattern='Integration Tests' src/*.integration.test.ts"
   },
   "keywords": [
     "git",

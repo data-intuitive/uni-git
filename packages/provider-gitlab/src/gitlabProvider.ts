@@ -208,7 +208,33 @@ export class GitLabProvider extends GitProvider {
 }
 
 function mapGitLabError(error: unknown): Error {
+  // Log the error structure to debug
   if (error && typeof error === "object") {
+    // Check for GitBeaker error structure
+    if ("cause" in error && error.cause && typeof error.cause === "object") {
+      const cause = error.cause as any;
+      if ("status" in cause) {
+        const status = cause.status;
+        const message = cause.message || "GitLab API error";
+        
+        switch (status) {
+          case 401:
+            return new AuthError("GitLab authentication failed", error);
+          case 403:
+            return new AuthError("GitLab authorization failed", error);
+          case 404:
+            return new NotFoundError("Repository not found", error);
+          case 429:
+            return new RateLimitError(undefined, error);
+          default:
+            if (status >= 500) {
+              return new NetworkError(`GitLab server error: ${message}`, error);
+            }
+            return new NetworkError(`GitLab API error: ${message}`, error);
+        }
+      }
+    }
+
     // GitLab errors might have different structure
     if ("response" in error) {
       const response = (error as any).response;
@@ -259,6 +285,18 @@ function mapGitLabError(error: unknown): Error {
   }
 
   if (error instanceof Error) {
+    const message = error.message;
+    // Check error message patterns for GitBeaker SDK
+    if (message.includes("Unauthorized") || message.includes("401")) {
+      return new AuthError("GitLab authentication failed", error);
+    }
+    if (message.includes("Not Found") || message.includes("404")) {
+      return new NotFoundError("Repository not found", error);
+    }
+    if (message.includes("Rate limit") || message.includes("429")) {
+      return new RateLimitError(undefined, error);
+    }
+    
     return new NetworkError(`GitLab request failed: ${error.message}`, error);
   }
 

@@ -259,17 +259,82 @@ cd git-providers
 pnpm install
 ```
 
-### Build
+### Build & Test
 
 ```bash
+# Build all packages
 pnpm build
+
+# Run unit tests (always run, use mocks)
+pnpm test
+
+# Type checking
+pnpm typecheck
+
+# Linting
+pnpm lint
 ```
 
-### Test
+### Integration Testing
+
+We provide comprehensive integration tests that verify real API functionality. These tests are **automatically skipped** when credentials are not available.
+
+#### Quick Setup (Recommended Order)
+
+1. **GitHub** (Simplest - 2 minutes):
+   ```bash
+   export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   pnpm test:integration:github
+   ```
+
+2. **GitLab** (Simple - 5 minutes):
+   ```bash
+   export GITLAB_TOKEN="glpat-xxxxxxxxxxxxxxxxxxxx" 
+   pnpm test:integration:gitlab
+   ```
+
+3. **Bitbucket** (Medium - 10 minutes):
+   ```bash
+   export BITBUCKET_USERNAME="your-username"
+   export BITBUCKET_APP_PASSWORD="ATBBxxxxxxxxxxxxxxxxxx"
+   pnpm test:integration:bitbucket
+   ```
+
+#### All Integration Tests
 
 ```bash
-pnpm test
+# Run all available integration tests
+pnpm test:integration
+
+# Or use the comprehensive script
+./scripts/integration-test.sh
 ```
+
+#### Advanced Authentication Testing
+
+```bash
+# GitHub App authentication
+export GITHUB_APP_ID="123456"
+export GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----..."
+export GITHUB_APP_INSTALLATION_ID="12345678" # optional
+
+# Self-hosted instances
+export GITHUB_BASE_URL="https://github.company.com/api/v3"
+export GITLAB_HOST="https://gitlab.company.com"
+
+# OAuth tokens
+export GITLAB_OAUTH_TOKEN="oauth_token_here"
+export BITBUCKET_OAUTH_TOKEN="oauth_token_here"
+```
+
+#### What Integration Tests Cover
+
+- ✅ **Authentication**: All auth methods (tokens, OAuth, GitHub Apps)
+- ✅ **API Functionality**: Repository metadata, user repos, branches, tags
+- ✅ **Error Handling**: 404s, auth failures, rate limiting
+- ✅ **Self-Hosted**: GitHub Enterprise, GitLab self-managed
+- ✅ **Pagination**: Large result sets
+- ✅ **Cross-Provider**: Consistent interface verification
 
 ### Run Example
 
