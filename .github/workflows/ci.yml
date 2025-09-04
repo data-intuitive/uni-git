@@ -61,9 +61,6 @@ jobs:
       # Allow integration tests to fail without blocking the pipeline
       fail-fast: false
     
-    permissions:
-      contents: read
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -88,7 +85,7 @@ jobs:
         env:
           CI: true
           # GitHub credentials
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.INTEGRATION_GITHUB_TOKEN }}
           GITHUB_APP_ID: ${{ secrets.INTEGRATION_GITHUB_APP_ID }}
           GITHUB_APP_PRIVATE_KEY: ${{ secrets.INTEGRATION_GITHUB_APP_PRIVATE_KEY }}
           # GITHUB_APP_INSTALLATION_ID: ${{ secrets.INTEGRATION_GITHUB_APP_INSTALLATION_ID }}
