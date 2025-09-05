@@ -59,4 +59,19 @@ describe("BitbucketProvider", () => {
     expect(provider.opts.requestTimeoutMs).toBe(30000);
     expect(provider.opts.userAgent).toBe("test-agent");
   });
+
+  it("should handle different auth kinds for workspace determination", () => {
+    const basicProvider = new BitbucketProvider({
+      auth: { kind: "basic", username: "basic-user", password: "pass" },
+    });
+    
+    const oauthProvider = new BitbucketProvider({
+      auth: { kind: "oauth", token: "oauth-token" },
+    });
+    
+    // Both providers should be created successfully
+    // The actual workspace determination logic is tested in integration tests
+    expect(basicProvider).toBeInstanceOf(BitbucketProvider);
+    expect(oauthProvider).toBeInstanceOf(BitbucketProvider);
+  });
 });

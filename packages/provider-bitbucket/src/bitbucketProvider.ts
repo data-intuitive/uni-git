@@ -91,13 +91,33 @@ export class BitbucketProvider extends GitProvider {
     return withRetry(async () => {
       try {
         const client = await this.client();
+        
+        // Get workspace name - for basic auth use username, for OAuth get current user
+        let workspace: string;
+        if (this.bb.auth.kind === "basic") {
+          workspace = this.bb.auth.username;
+        } else {
+          // For OAuth, get current user's username to use as workspace
+          try {
+            const { data: user } = await client.user.get();
+            workspace = user.username || user.display_name;
+            if (!workspace) {
+              throw new Error("Unable to determine workspace from user profile");
+            }
+          } catch (error) {
+            throw new Error("OAuth authentication requires getting user profile to determine workspace");
+          }
+        }
+
         const repos: Repo[] = [];
         let page = 1;
         const pagelen = Math.min(options?.perPage || 50, 100);
         const maxItems = options?.maxItems || Infinity;
 
         while (repos.length < maxItems) {
+          // Use the official SDK method for listing workspace repositories
           const { data } = await client.repositories.list({
+            workspace,
             role: "member",
             sort: "-updated_on",
             page,
