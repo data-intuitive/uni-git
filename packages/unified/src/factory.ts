@@ -1,4 +1,4 @@
-import { GitProvider, GitHubAuth, GitLabAuth, BitbucketAuth, ProviderOptions, ConfigurationError } from "@uni-git/core";
+import { GitProvider, GitHubAuth, GitLabAuth, BitbucketAuth, ProviderOptions, ConfigurationError, Organization } from "@uni-git/core";
 
 export type ProviderType = "github" | "gitlab" | "bitbucket";
 
@@ -94,5 +94,25 @@ export async function createProvider(config: UnifiedProviderConfig): Promise<Git
 
     default:
       throw new ConfigurationError(`Unsupported provider type: ${(config as any).type}`);
+  }
+}
+
+/**
+ * Convenience function to create a provider and automatically discover available organizations/workspaces
+ * Returns both the provider and a list of discovered organizations
+ */
+export async function createProviderWithOrganizations(config: UnifiedProviderConfig): Promise<{
+  provider: GitProvider;
+  organizations: Organization[];
+}> {
+  const provider = await createProvider(config);
+  
+  try {
+    const organizations = await provider.getOrganizations();
+    return { provider, organizations };
+  } catch (error) {
+    // If organization discovery fails, return provider with empty organizations
+    console.warn(`Warning: Could not discover organizations: ${error instanceof Error ? error.message : String(error)}`);
+    return { provider, organizations: [] };
   }
 }

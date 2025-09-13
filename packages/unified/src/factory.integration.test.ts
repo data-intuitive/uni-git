@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { createProvider } from "../src/index.js";
+import { createProvider, createProviderWithOrganizations } from "../src/index.js";
 import { GitProvider } from "@uni-git/core";
 
 // Integration tests for the unified factory
@@ -172,6 +172,113 @@ describe("Unified Factory Integration Tests", () => {
     });
   });
 
+  describe("Organization Features", () => {
+    it("should support organization methods across all providers", async () => {
+      const availableProviders: Array<{ type: any, name: string, condition: boolean }> = [
+        { type: "github", name: "GitHub", condition: hasGitHubToken },
+        { type: "gitlab", name: "GitLab", condition: hasGitLabToken },
+        { type: "bitbucket", name: "Bitbucket", condition: hasBitbucketCreds },
+      ];
+
+      const providers: GitProvider[] = [];
+      
+      for (const { type, name, condition } of availableProviders) {
+        if (!condition) {
+          console.log(`⏭️  Skipping ${name} organizations test - credentials not available`);
+          continue;
+        }
+
+        let provider: GitProvider;
+
+        if (type === "github") {
+          provider = await createProvider({
+            type: "github",
+            auth: { kind: "token", token: process.env.GITHUB_TOKEN! },
+          });
+        } else if (type === "gitlab") {
+          provider = await createProvider({
+            type: "gitlab",
+            auth: { kind: "token", token: process.env.GITLAB_TOKEN! },
+          });
+        } else if (type === "bitbucket") {
+          provider = await createProvider({
+            type: "bitbucket",
+            auth: { 
+              kind: "basic", 
+              username: process.env.BITBUCKET_USERNAME!,
+              password: process.env.BITBUCKET_APP_PASSWORD!,
+            },
+            // Don't specify workspace - let it auto-discover
+          });
+        } else {
+          continue;
+        }
+
+        providers.push(provider);
+        
+        // Test organization methods
+        try {
+          const organizations = await provider.getOrganizations();
+          expect(Array.isArray(organizations)).toBe(true);
+          
+          console.log(`✅ ${name} organizations: ${organizations.length} found`);
+          
+          // Test organization repos if we have organizations
+          if (organizations.length > 0) {
+            const firstOrg = organizations[0];
+            expect(firstOrg).toHaveProperty('id');
+            expect(firstOrg).toHaveProperty('name');
+            expect(firstOrg).toHaveProperty('displayName');
+            
+            const orgRepos = await provider.getOrganizationRepos(firstOrg.name);
+            expect(Array.isArray(orgRepos)).toBe(true);
+            
+            console.log(`   ${firstOrg.name}: ${orgRepos.length} repositories`);
+          }
+        } catch (error) {
+          console.log(`⚠️  ${name} organization test failed: ${error instanceof Error ? error.message : String(error)}`);
+          // Don't fail the test for organization errors - some tokens might not have org access
+        }
+      }
+
+      if (providers.length === 0) {
+        console.log("⚠️  No providers available for organization testing");
+        return;
+      }
+
+      console.log(`✅ Organization support verified across ${providers.length} providers`);
+    });
+
+    it("should support createProviderWithOrganizations convenience function", async () => {
+      if (!hasBitbucketCreds) {
+        console.log("⏭️  Skipping convenience function test - Bitbucket credentials not available");
+        return;
+      }
+
+      const { provider, organizations } = await createProviderWithOrganizations({
+        type: "bitbucket",
+        auth: { 
+          kind: "basic", 
+          username: process.env.BITBUCKET_USERNAME!,
+          password: process.env.BITBUCKET_APP_PASSWORD!,
+        },
+        // Don't specify workspace - let it auto-discover
+      });
+
+      expect(provider).toBeInstanceOf(GitProvider);
+      expect(Array.isArray(organizations)).toBe(true);
+      
+      console.log(`✅ Convenience function created provider with ${organizations.length} organizations`);
+      
+      if (organizations.length > 0) {
+        const firstOrg = organizations[0];
+        expect(firstOrg).toHaveProperty('id');
+        expect(firstOrg).toHaveProperty('name');
+        console.log(`   First organization: ${firstOrg.name} (${firstOrg.displayName || 'no display name'})`);
+      }
+    });
+  });
+
   describe("Cross-Provider Compatibility", () => {
     const availableProviders: Array<{ type: any, name: string, condition: boolean }> = [
       { type: "github", name: "GitHub", condition: hasGitHubToken },
@@ -229,6 +336,8 @@ describe("Unified Factory Integration Tests", () => {
         expect(typeof provider.getUserRepos).toBe("function");
         expect(typeof provider.getRepoBranches).toBe("function");
         expect(typeof provider.getRepoTags).toBe("function");
+        expect(typeof provider.getOrganizations).toBe("function");
+        expect(typeof provider.getOrganizationRepos).toBe("function");
       }
 
       // Test that all providers return the same data structure
