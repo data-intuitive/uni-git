@@ -8,8 +8,12 @@ vi.mock("@octokit/rest", () => ({
     repos: {
       get: vi.fn(),
       listForAuthenticatedUser: vi.fn(),
+      listForOrg: vi.fn(),
       listBranches: vi.fn(),
       listTags: vi.fn(),
+    },
+    orgs: {
+      listForAuthenticatedUser: vi.fn(),
     },
     paginate: {
       iterator: vi.fn(),
@@ -61,5 +65,23 @@ describe("GitHubProvider", () => {
     
     expect(provider.opts.requestTimeoutMs).toBe(30000);
     expect(provider.opts.userAgent).toBe("test-agent");
+  });
+
+  describe("Organization methods", () => {
+    it("should have getOrganizations method", () => {
+      const provider = new GitHubProvider({
+        auth: { kind: "token", token: "test-token" },
+      });
+      
+      expect(typeof provider.getOrganizations).toBe("function");
+    });
+
+    it("should have getOrganizationRepos method", () => {
+      const provider = new GitHubProvider({
+        auth: { kind: "token", token: "test-token" },
+      });
+      
+      expect(typeof provider.getOrganizationRepos).toBe("function");
+    });
   });
 });

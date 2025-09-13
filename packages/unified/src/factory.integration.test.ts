@@ -126,6 +126,7 @@ describe("Unified Factory Integration Tests", () => {
           username: process.env.BITBUCKET_USERNAME!,
           password: process.env.BITBUCKET_APP_PASSWORD!,
         },
+        workspace: process.env.BITBUCKET_WORKSPACE || "data-intuitive",
       });
 
       expect(provider).toBeInstanceOf(GitProvider);
@@ -140,6 +141,7 @@ describe("Unified Factory Integration Tests", () => {
       const provider = await createProvider({
         type: "bitbucket",
         auth: { kind: "oauth", token: process.env.BITBUCKET_OAUTH_TOKEN! },
+        workspace: process.env.BITBUCKET_WORKSPACE || "data-intuitive",
       });
 
       expect(provider).toBeInstanceOf(GitProvider);
@@ -206,6 +208,7 @@ describe("Unified Factory Integration Tests", () => {
               username: process.env.BITBUCKET_USERNAME!,
               password: process.env.BITBUCKET_APP_PASSWORD!,
             },
+            workspace: process.env.BITBUCKET_WORKSPACE || "data-intuitive",
           });
         } else {
           continue;

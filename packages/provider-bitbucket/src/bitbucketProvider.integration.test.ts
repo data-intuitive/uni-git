@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { BitbucketProvider } from "../src/index.js";
-import { NotFoundError, AuthError } from "@uni-git/core";
+import { NotFoundError } from "@uni-git/core";
 
 // Integration tests that run against real Bitbucket API
 // Only run when BITBUCKET_USERNAME and BITBUCKET_APP_PASSWORD are available
+// BITBUCKET_WORKSPACE is required for Bitbucket Cloud
 const hasBitbucketCreds = !!(process.env.BITBUCKET_USERNAME && process.env.BITBUCKET_APP_PASSWORD);
 const hasOAuthToken = !!process.env.BITBUCKET_OAUTH_TOKEN;
 const bitbucketUsername = process.env.BITBUCKET_USERNAME;
 const bitbucketPassword = process.env.BITBUCKET_APP_PASSWORD;
 const bitbucketOAuthToken = process.env.BITBUCKET_OAUTH_TOKEN;
+const bitbucketWorkspace = process.env.BITBUCKET_WORKSPACE || bitbucketUsername; // Default to username if not set
 
 // Known public repositories for testing
 const PUBLIC_REPO = "atlassian/localstack";
@@ -30,6 +32,7 @@ describe.skipIf(!hasBitbucketCreds)("BitbucketProvider Integration Tests", () =>
         username: bitbucketUsername!, 
         password: bitbucketPassword! 
       },
+      workspace: bitbucketWorkspace,
     });
   });
 
@@ -79,12 +82,46 @@ describe.skipIf(!hasBitbucketCreds)("BitbucketProvider Integration Tests", () =>
           username: "invalid_user", 
           password: "invalid_password" 
         },
+        workspace: bitbucketWorkspace,
       });
       
       // Should throw AuthError for invalid credentials
       await expect(invalidProvider.getRepoMetadata(PUBLIC_REPO)).rejects.toThrow();
       
       console.log("✅ Invalid basic auth properly rejected");
+    });
+
+    it("should list available workspaces for Bitbucket Cloud", async () => {
+      const workspaces = await provider.listWorkspaces({ maxItems: 10 });
+      
+      expect(Array.isArray(workspaces)).toBe(true);
+      expect(workspaces.length).toBeGreaterThan(0);
+      
+      // Check structure of workspace objects
+      const firstWorkspace = workspaces[0];
+      expect(firstWorkspace).toMatchObject({
+        slug: expect.any(String),
+        name: expect.any(String),
+        uuid: expect.any(String),
+      });
+      
+      console.log(`✅ Found ${workspaces.length} workspaces`);
+      console.log(`   First workspace: ${firstWorkspace.slug} (${firstWorkspace.name})`);
+    });
+
+    it("should require workspace parameter for Bitbucket Cloud user repos", async () => {
+      const providerWithoutWorkspace = new BitbucketProvider({
+        auth: { 
+          kind: "basic", 
+          username: bitbucketUsername!, 
+          password: bitbucketPassword! 
+        },
+        // No workspace parameter
+      });
+      
+      await expect(providerWithoutWorkspace.getUserRepos()).rejects.toThrow(/workspace parameter/);
+      
+      console.log("✅ Workspace requirement properly enforced for Bitbucket Cloud");
     });
 
     it.skipIf(!hasOAuthToken)("should throw error for invalid OAuth token", async () => {
@@ -178,6 +215,74 @@ describe.skipIf(!hasBitbucketCreds)("BitbucketProvider Integration Tests", () =>
 
     it("should throw NotFoundError for nonexistent repository", async () => {
       await expect(provider.getRepoTags(NONEXISTENT_REPO)).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe("Workspaces (Organizations)", () => {
+    it("should list workspaces for authenticated user", async () => {
+      const organizations = await provider.getOrganizations();
+      
+      expect(Array.isArray(organizations)).toBe(true);
+      expect(organizations.length).toBeGreaterThan(0);
+      console.log(`✅ Found ${organizations.length} workspaces`);
+      
+      const workspace = organizations[0];
+      expect(workspace).toHaveProperty("id");
+      expect(workspace).toHaveProperty("name");
+      expect(typeof workspace.name).toBe("string");
+      console.log(`   First workspace: ${workspace.name} (${workspace.displayName || "no display name"})`);
+    });
+
+    it("should list repositories for workspace", async () => {
+      const organizations = await provider.getOrganizations();
+      
+      expect(organizations.length).toBeGreaterThan(0);
+      const workspaceName = organizations[0].name;
+      const workspaceRepos = await provider.getOrganizationRepos(workspaceName);
+      
+      expect(Array.isArray(workspaceRepos)).toBe(true);
+      console.log(`✅ Found ${workspaceRepos.length} repositories in workspace ${workspaceName}`);
+      
+      if (workspaceRepos.length > 0) {
+        const repo = workspaceRepos[0];
+        expect(repo).toHaveProperty("id");
+        expect(repo).toHaveProperty("name");
+        expect(repo).toHaveProperty("fullName");
+        expect(repo.fullName).toContain(workspaceName);
+      }
+    });
+
+    it("should handle workspace repositories search", async () => {
+      const organizations = await provider.getOrganizations();
+      
+      expect(organizations.length).toBeGreaterThan(0);
+      const workspaceName = organizations[0].name;
+      const allWorkspaceRepos = await provider.getOrganizationRepos(workspaceName);
+      
+      if (allWorkspaceRepos.length === 0) {
+        console.log("⚠️  No repositories in workspace, skipping search test");
+        return;
+      }
+
+      // Search for repositories with a common letter
+      const searchRepos = await provider.getOrganizationRepos(workspaceName, "a");
+      
+      expect(Array.isArray(searchRepos)).toBe(true);
+      expect(searchRepos.length).toBeLessThanOrEqual(allWorkspaceRepos.length);
+      console.log(`✅ Workspace search returned ${searchRepos.length} of ${allWorkspaceRepos.length} repositories`);
+    });
+
+    it("should automatically discover and aggregate repositories across workspaces", async () => {
+      const repos = await provider.getUserRepos();
+      expect(Array.isArray(repos)).toBe(true);
+      console.log(`✅ Automatic workspace discovery found ${repos.length} repositories across all workspaces`);
+      
+      if (repos.length > 0) {
+        const firstRepo = repos[0];
+        expect(firstRepo).toHaveProperty("fullName");
+        expect(firstRepo.fullName).toContain("/"); // Should be workspace/repo format
+        console.log(`   First repo: ${firstRepo.fullName}`);
+      }
     });
   });
 

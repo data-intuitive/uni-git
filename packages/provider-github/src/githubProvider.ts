@@ -1,6 +1,7 @@
 import {
   GitProvider,
   Repo,
+  Organization,
   ProviderOptions,
   GitHubAuth,
   AuthError,
@@ -118,13 +119,104 @@ export class GitHubProvider extends GitProvider {
               return repos;
             }
 
-            if (!search || r.full_name.includes(search) || r.name.includes(search)) {
+            // Client-side filtering since GitHub's /user/repos doesn't support server-side search
+            if (!search || 
+                r.full_name.toLowerCase().includes(search.toLowerCase()) || 
+                r.name.toLowerCase().includes(search.toLowerCase()) ||
+                (r.description && r.description.toLowerCase().includes(search.toLowerCase()))) {
               repos.push({
                 id: String(r.id),
                 name: r.name,
                 fullName: r.full_name,
                 ...(r.description ? { description: r.description } : {}),
                 defaultBranch: r.default_branch,
+                isPrivate: Boolean(r.private),
+                webUrl: r.html_url,
+                ...(r.ssh_url ? { sshUrl: r.ssh_url } : {}),
+                ...(r.clone_url ? { httpUrl: r.clone_url } : {}),
+              });
+            }
+          }
+        }
+
+        return repos;
+      } catch (error: unknown) {
+        throw mapGitHubError(error);
+      }
+    });
+  }
+
+  async getOrganizations(options?: PaginationOptions): Promise<Organization[]> {
+    return withRetry(async () => {
+      try {
+        const cli = await this.client();
+        const organizations: Organization[] = [];
+        const perPage = Math.min(options?.perPage || 100, 100);
+        const maxItems = options?.maxItems || Infinity;
+
+        // Use the memberships endpoint to get role information
+        for await (const response of cli.paginate.iterator(cli.orgs.listMembershipsForAuthenticatedUser, {
+          per_page: perPage,
+          state: "active", // Only get active memberships
+        })) {
+          for (const membership of response.data) {
+            if (organizations.length >= maxItems) {
+              return organizations;
+            }
+
+            const org = membership.organization;
+            organizations.push({
+              id: String(org.id),
+              name: org.login,
+              displayName: org.login, // GitHub memberships API doesn't include display name
+              ...(org.description ? { description: org.description } : {}),
+              webUrl: `https://github.com/${org.login}`,
+              role: membership.role, // "admin" or "member"
+            });
+          }
+        }
+
+        return organizations;
+      } catch (error: unknown) {
+        throw mapGitHubError(error);
+      }
+    });
+  }
+
+  async getOrganizationRepos(
+    organizationName: string,
+    search?: string,
+    options?: PaginationOptions
+  ): Promise<Repo[]> {
+    return withRetry(async () => {
+      try {
+        const cli = await this.client();
+        const repos: Repo[] = [];
+        const perPage = Math.min(options?.perPage || 100, 100);
+        const maxItems = options?.maxItems || Infinity;
+
+        for await (const response of cli.paginate.iterator(cli.repos.listForOrg, {
+          org: organizationName,
+          per_page: perPage,
+          sort: "updated",
+          direction: "desc",
+        })) {
+          for (const r of response.data) {
+            if (repos.length >= maxItems) {
+              return repos;
+            }
+
+            // Client-side filtering since GitHub's org repos API doesn't support server-side search
+            if (!search || 
+                r.full_name.toLowerCase().includes(search.toLowerCase()) || 
+                r.name.toLowerCase().includes(search.toLowerCase()) ||
+                (r.description && r.description.toLowerCase().includes(search.toLowerCase()))) {
+              repos.push({
+                id: String(r.id),
+                name: r.name,
+                fullName: r.full_name,
+                ...(r.description ? { description: r.description } : {}),
+                defaultBranch: r.default_branch || "main",
                 isPrivate: Boolean(r.private),
                 webUrl: r.html_url,
                 ...(r.ssh_url ? { sshUrl: r.ssh_url } : {}),

@@ -16,6 +16,7 @@ export type UnifiedProviderConfig =
   | {
       type: "bitbucket";
       auth: BitbucketAuth;
+      workspace?: string; // Required for Bitbucket Cloud, optional for self-hosted
     } & ProviderOptions;
 
 /**
@@ -74,6 +75,7 @@ export async function createProvider(config: UnifiedProviderConfig): Promise<Git
         const options: any = {
           auth: config.auth,
         };
+        if (config.workspace) options.workspace = config.workspace;
         if (config.baseUrl) options.baseUrl = config.baseUrl;
         if (config.userAgent) options.userAgent = config.userAgent;
         if (config.requestTimeoutMs) options.requestTimeoutMs = config.requestTimeoutMs;

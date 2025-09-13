@@ -216,6 +216,70 @@ describe.skipIf(!hasGitLabToken)("GitLabProvider Integration Tests", () => {
     });
   });
 
+  describe("Groups (Organizations)", () => {
+    it("should list groups for authenticated user", async () => {
+      const organizations = await provider.getOrganizations();
+      
+      expect(Array.isArray(organizations)).toBe(true);
+      console.log(`✅ Found ${organizations.length} groups`);
+      
+      if (organizations.length > 0) {
+        const group = organizations[0];
+        expect(group).toHaveProperty("id");
+        expect(group).toHaveProperty("name");
+        expect(typeof group.name).toBe("string");
+        console.log(`   First group: ${group.name} (${group.displayName || "no display name"})`);
+      }
+    });
+
+    it("should list projects for group (if user has group access)", async () => {
+      const organizations = await provider.getOrganizations();
+      
+      if (organizations.length === 0) {
+        console.log("⚠️  No groups found, skipping group projects test");
+        return;
+      }
+
+      const groupName = organizations[0].name;
+      const groupProjects = await provider.getOrganizationRepos(groupName);
+      
+      expect(Array.isArray(groupProjects)).toBe(true);
+      console.log(`✅ Found ${groupProjects.length} projects in group ${groupName}`);
+      
+      if (groupProjects.length > 0) {
+        const project = groupProjects[0];
+        expect(project).toHaveProperty("id");
+        expect(project).toHaveProperty("name");
+        expect(project).toHaveProperty("fullName");
+        expect(project.fullName).toContain(groupName);
+      }
+    });
+
+    it("should handle group projects search", async () => {
+      const organizations = await provider.getOrganizations();
+      
+      if (organizations.length === 0) {
+        console.log("⚠️  No groups found, skipping group projects search test");
+        return;
+      }
+
+      const groupName = organizations[0].name;
+      const allGroupProjects = await provider.getOrganizationRepos(groupName);
+      
+      if (allGroupProjects.length === 0) {
+        console.log("⚠️  No projects in group, skipping search test");
+        return;
+      }
+
+      // Search for projects with a common letter
+      const searchProjects = await provider.getOrganizationRepos(groupName, "a");
+      
+      expect(Array.isArray(searchProjects)).toBe(true);
+      expect(searchProjects.length).toBeLessThanOrEqual(allGroupProjects.length);
+      console.log(`✅ Group search returned ${searchProjects.length} of ${allGroupProjects.length} projects`);
+    });
+  });
+
   describe("Error Handling", () => {
     it("should handle rate limiting gracefully", async () => {
       // Make multiple rapid requests to potentially trigger rate limiting

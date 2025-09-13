@@ -8,6 +8,10 @@ vi.mock("@gitbeaker/rest", () => ({
       show: vi.fn(),
       all: vi.fn(),
     },
+    Groups: {
+      all: vi.fn(),
+      projects: vi.fn(),
+    },
     Branches: {
       all: vi.fn(),
     },
@@ -64,5 +68,23 @@ describe("GitLabProvider", () => {
     
     expect(provider.opts.requestTimeoutMs).toBe(30000);
     expect(provider.opts.userAgent).toBe("test-agent");
+  });
+
+  describe("Organization methods", () => {
+    it("should have getOrganizations method", () => {
+      const provider = new GitLabProvider({
+        auth: { kind: "token", token: "test-token" },
+      });
+      
+      expect(typeof provider.getOrganizations).toBe("function");
+    });
+
+    it("should have getOrganizationRepos method", () => {
+      const provider = new GitLabProvider({
+        auth: { kind: "token", token: "test-token" },
+      });
+      
+      expect(typeof provider.getOrganizationRepos).toBe("function");
+    });
   });
 });

@@ -1,6 +1,7 @@
 import {
   GitProvider,
   Repo,
+  Organization,
   ProviderOptions,
   GitLabAuth,
   AuthError,
@@ -93,6 +94,108 @@ export class GitLabProvider extends GitProvider {
         while (repos.length < maxItems) {
           const projects = await cli.Projects.all({
             membership: true,
+            order_by: "updated_at",
+            sort: "desc",
+            page,
+            per_page: perPage,
+            search: search,
+          });
+
+          if (!projects.length) {
+            break;
+          }
+
+          for (const project of projects) {
+            if (repos.length >= maxItems) {
+              break;
+            }
+
+            repos.push({
+              id: String(project.id),
+              name: project.name,
+              fullName: project.path_with_namespace,
+              description: project.description ?? undefined,
+              defaultBranch: project.default_branch || "main",
+              isPrivate: project.visibility !== "public",
+              webUrl: project.web_url,
+              sshUrl: project.ssh_url_to_repo ?? undefined,
+              httpUrl: project.http_url_to_repo ?? undefined,
+            });
+          }
+
+          page++;
+        }
+
+        return repos;
+      } catch (error: unknown) {
+        throw mapGitLabError(error);
+      }
+    });
+  }
+
+  async getOrganizations(options?: PaginationOptions): Promise<Organization[]> {
+    return withRetry(async () => {
+      try {
+        const cli = await this.client();
+        const organizations: Organization[] = [];
+        let page = 1;
+        const perPage = Math.min(options?.perPage || 100, 100);
+        const maxItems = options?.maxItems || Infinity;
+
+        while (organizations.length < maxItems) {
+          const groups = await cli.Groups.all({
+            membership: true,
+            order_by: "name",
+            sort: "asc",
+            page,
+            per_page: perPage,
+          });
+
+          if (!groups.length) {
+            break;
+          }
+
+          for (const group of groups) {
+            if (organizations.length >= maxItems) {
+              break;
+            }
+
+            organizations.push({
+              id: String(group.id),
+              name: group.path,
+              displayName: group.name,
+              description: group.description ?? undefined,
+              webUrl: group.web_url,
+              // GitLab Groups API doesn't easily provide role, would need separate call
+              role: "member",
+            });
+          }
+
+          page++;
+        }
+
+        return organizations;
+      } catch (error: unknown) {
+        throw mapGitLabError(error);
+      }
+    });
+  }
+
+  async getOrganizationRepos(
+    organizationName: string,
+    search?: string,
+    options?: PaginationOptions
+  ): Promise<Repo[]> {
+    return withRetry(async () => {
+      try {
+        const cli = await this.client();
+        const repos: Repo[] = [];
+        let page = 1;
+        const perPage = Math.min(options?.perPage || 100, 100);
+        const maxItems = options?.maxItems || Infinity;
+
+        while (repos.length < maxItems) {
+          const projects = await cli.Groups.allProjects(organizationName, {
             order_by: "updated_at",
             sort: "desc",
             page,

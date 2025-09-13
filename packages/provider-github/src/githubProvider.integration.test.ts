@@ -183,6 +183,70 @@ describe.skipIf(!hasGitHubToken)("GitHubProvider Integration Tests", () => {
     });
   });
 
+  describe("Organizations", () => {
+    it("should list organizations for authenticated user", async () => {
+      const organizations = await provider.getOrganizations();
+      
+      expect(Array.isArray(organizations)).toBe(true);
+      console.log(`✅ Found ${organizations.length} organizations`);
+      
+      if (organizations.length > 0) {
+        const org = organizations[0];
+        expect(org).toHaveProperty("id");
+        expect(org).toHaveProperty("name");
+        expect(typeof org.name).toBe("string");
+        console.log(`   First org: ${org.name} (${org.displayName || "no display name"})`);
+      }
+    });
+
+    it("should list repositories for organization (if user has org access)", async () => {
+      const organizations = await provider.getOrganizations();
+      
+      if (organizations.length === 0) {
+        console.log("⚠️  No organizations found, skipping org repos test");
+        return;
+      }
+
+      const orgName = organizations[0].name;
+      const orgRepos = await provider.getOrganizationRepos(orgName);
+      
+      expect(Array.isArray(orgRepos)).toBe(true);
+      console.log(`✅ Found ${orgRepos.length} repositories in organization ${orgName}`);
+      
+      if (orgRepos.length > 0) {
+        const repo = orgRepos[0];
+        expect(repo).toHaveProperty("id");
+        expect(repo).toHaveProperty("name");
+        expect(repo).toHaveProperty("fullName");
+        expect(repo.fullName).toContain(orgName);
+      }
+    });
+
+    it("should handle organization repos search", async () => {
+      const organizations = await provider.getOrganizations();
+      
+      if (organizations.length === 0) {
+        console.log("⚠️  No organizations found, skipping org repos search test");
+        return;
+      }
+
+      const orgName = organizations[0].name;
+      const allOrgRepos = await provider.getOrganizationRepos(orgName);
+      
+      if (allOrgRepos.length === 0) {
+        console.log("⚠️  No repositories in organization, skipping search test");
+        return;
+      }
+
+      // Search for repositories with a common letter
+      const searchRepos = await provider.getOrganizationRepos(orgName, "a");
+      
+      expect(Array.isArray(searchRepos)).toBe(true);
+      expect(searchRepos.length).toBeLessThanOrEqual(allOrgRepos.length);
+      console.log(`✅ Organization search returned ${searchRepos.length} of ${allOrgRepos.length} repositories`);
+    });
+  });
+
   describe("Error Handling", () => {
     it("should handle rate limiting gracefully", async () => {
       // Make multiple rapid requests to potentially trigger rate limiting

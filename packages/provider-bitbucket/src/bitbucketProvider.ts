@@ -1,6 +1,7 @@
 import {
   GitProvider,
   Repo,
+  Organization,
   ProviderOptions,
   BitbucketAuth,
   AuthError,
@@ -13,6 +14,9 @@ import {
 
 export interface BitbucketProviderOptions extends ProviderOptions {
   auth: BitbucketAuth;
+  workspace?: string; // Required for Bitbucket Cloud, not used for self-hosted
+  // For Bitbucket Cloud: workspace is required for repository access
+  // For Self-hosted: workspace is ignored, uses projects instead
 }
 
 export class BitbucketProvider extends GitProvider {
@@ -20,6 +24,67 @@ export class BitbucketProvider extends GitProvider {
 
   constructor(private readonly bb: BitbucketProviderOptions) {
     super(bb);
+  }
+
+  /**
+   * Check if this is Bitbucket Cloud (SaaS) vs self-hosted
+   */
+  private isBitbucketCloud(): boolean {
+    const baseUrl = this.opts.baseUrl || "https://api.bitbucket.org/2.0";
+    return baseUrl.includes("bitbucket.org");
+  }
+
+  /**
+   * List available workspaces for Bitbucket Cloud
+   * Only works with Bitbucket Cloud, not self-hosted
+   */
+  async listWorkspaces(options?: PaginationOptions): Promise<Array<{ slug: string; name: string; uuid: string }>> {
+    if (!this.isBitbucketCloud()) {
+      throw new Error("listWorkspaces() is only available for Bitbucket Cloud, not self-hosted instances");
+    }
+
+    return withRetry(async () => {
+      try {
+        const client = await this.client();
+        const workspaces: Array<{ slug: string; name: string; uuid: string }> = [];
+        let page = 1;
+        const pagelen = Math.min(options?.perPage || 50, 100);
+        const maxItems = options?.maxItems || Infinity;
+
+        while (workspaces.length < maxItems) {
+          const { data } = await client.workspaces.getWorkspaces({
+            role: "member",
+            page,
+            pagelen,
+          });
+
+          if (!data.values || data.values.length === 0) {
+            break;
+          }
+
+          for (const workspace of data.values) {
+            if (workspaces.length >= maxItems) {
+              break;
+            }
+
+            workspaces.push({
+              slug: workspace.slug,
+              name: workspace.name,
+              uuid: workspace.uuid,
+            });
+          }
+
+          if (!data.next) {
+            break;
+          }
+          page++;
+        }
+
+        return workspaces;
+      } catch (error: unknown) {
+        throw mapBitbucketError(error);
+      }
+    });
   }
 
   private async client(): Promise<any> {
@@ -90,67 +155,254 @@ export class BitbucketProvider extends GitProvider {
   async getUserRepos(search?: string, options?: PaginationOptions): Promise<Repo[]> {
     return withRetry(async () => {
       try {
-        const client = await this.client();
-        
-        // Get workspace name - for basic auth use username, for OAuth get current user
-        let workspace: string;
-        if (this.bb.auth.kind === "basic") {
-          workspace = this.bb.auth.username;
+        if (this.isBitbucketCloud()) {
+          // Bitbucket Cloud: requires workspace-scoped access
+          if (!this.bb.workspace) {
+            throw new Error(
+              "Bitbucket Cloud requires a workspace parameter. " +
+              "Use listWorkspaces() to discover available workspaces, then provide one in the constructor."
+            );
+          }
+
+          // For cloud, get repos from the specified workspace
+          return this.getOrganizationRepos(this.bb.workspace, search, options);
         } else {
-          // For OAuth, get current user's username to use as workspace
-          try {
-            const { data: user } = await client.user.get();
-            workspace = user.username || user.display_name;
-            if (!workspace) {
-              throw new Error("Unable to determine workspace from user profile");
+          // Self-hosted Bitbucket: use global repository listing (similar to GitHub)
+          const client = await this.client();
+          const repos: Repo[] = [];
+          let page = 1;
+          const pagelen = Math.min(options?.perPage || 50, 100);
+          const maxItems = options?.maxItems || Infinity;
+
+          while (repos.length < maxItems) {
+            // For self-hosted, use global repo listing
+            const { data } = await client.repositories.list({
+              role: "member",
+              sort: "-updated_on",
+              page,
+              pagelen,
+              q: search ? `name~"${search}"` : undefined,
+            });
+
+            if (!data.values || data.values.length === 0) {
+              break;
             }
-          } catch (error) {
-            throw new Error("OAuth authentication requires getting user profile to determine workspace");
+
+            for (const repo of data.values) {
+              if (repos.length >= maxItems) {
+                break;
+              }
+
+              repos.push({
+                id: repo.uuid,
+                name: repo.name,
+                fullName: repo.full_name,
+                description: repo.description ?? undefined,
+                defaultBranch: repo.mainbranch?.name || "main",
+                isPrivate: repo.is_private ?? false,
+                webUrl: repo.links?.html?.href,
+                sshUrl: repo.links?.clone?.find((link: any) => link.name === "ssh")?.href,
+                httpUrl: repo.links?.clone?.find((link: any) => link.name === "https")?.href,
+              });
+            }
+
+            if (!data.next) {
+              break;
+            }
+            page++;
+          }
+
+          return repos;
+        }
+      } catch (error: unknown) {
+        throw mapBitbucketError(error);
+      }
+    });
+  }
+
+  async getOrganizations(options?: PaginationOptions): Promise<Organization[]> {
+    return withRetry(async () => {
+      try {
+        const client = await this.client();
+        const organizations: Organization[] = [];
+        let page = 1;
+        const pagelen = Math.min(options?.perPage || 50, 100);
+        const maxItems = options?.maxItems || Infinity;
+
+        if (this.isBitbucketCloud()) {
+          // Bitbucket Cloud: list workspaces
+          while (organizations.length < maxItems) {
+            const { data } = await client.workspaces.getWorkspaces({
+              role: "member",
+              page,
+              pagelen,
+            });
+
+            if (!data.values || data.values.length === 0) {
+              break;
+            }
+
+            for (const workspace of data.values) {
+              if (organizations.length >= maxItems) {
+                break;
+              }
+
+              organizations.push({
+                id: workspace.uuid,
+                name: workspace.slug,
+                displayName: workspace.name,
+                webUrl: workspace.links?.html?.href,
+                role: "member", // Bitbucket doesn't provide granular role info easily
+              });
+            }
+
+            if (!data.next) {
+              break;
+            }
+            page++;
+          }
+        } else {
+          // Self-hosted Bitbucket: list projects (similar to GitHub organizations)
+          while (organizations.length < maxItems) {
+            try {
+              const { data } = await client.projects.list({
+                page,
+                pagelen,
+              });
+
+              if (!data.values || data.values.length === 0) {
+                break;
+              }
+
+              for (const project of data.values) {
+                if (organizations.length >= maxItems) {
+                  break;
+                }
+
+                organizations.push({
+                  id: project.uuid,
+                  name: project.key,
+                  displayName: project.name,
+                  description: project.description,
+                  webUrl: project.links?.html?.href,
+                  role: "member", // Self-hosted doesn't provide detailed role info in this API
+                });
+              }
+
+              if (!data.next) {
+                break;
+              }
+              page++;
+            } catch (error) {
+              // If projects API is not available, return empty array
+              // Some self-hosted instances might not have projects enabled
+              console.warn("Projects API not available on this Bitbucket instance");
+              break;
+            }
           }
         }
 
+        return organizations;
+      } catch (error: unknown) {
+        throw mapBitbucketError(error);
+      }
+    });
+  }
+
+  async getOrganizationRepos(
+    organizationName: string,
+    search?: string,
+    options?: PaginationOptions
+  ): Promise<Repo[]> {
+    return withRetry(async () => {
+      try {
+        const client = await this.client();
         const repos: Repo[] = [];
         let page = 1;
         const pagelen = Math.min(options?.perPage || 50, 100);
         const maxItems = options?.maxItems || Infinity;
 
-        while (repos.length < maxItems) {
-          // Use the official SDK method for listing workspace repositories
-          const { data } = await client.repositories.list({
-            workspace,
-            role: "member",
-            sort: "-updated_on",
-            page,
-            pagelen,
-            q: search ? `name~"${search}"` : undefined,
-          });
+        if (this.isBitbucketCloud()) {
+          // Bitbucket Cloud: workspace-scoped repositories
+          while (repos.length < maxItems) {
+            const { data } = await client.repositories.list({
+              workspace: organizationName,
+              role: "member",
+              sort: "-updated_on",
+              page,
+              pagelen,
+              q: search ? `name~"${search}"` : undefined,
+            });
 
-          if (!data.values || data.values.length === 0) {
-            break;
-          }
-
-          for (const repo of data.values) {
-            if (repos.length >= maxItems) {
+            if (!data.values || data.values.length === 0) {
               break;
             }
 
-            repos.push({
-              id: repo.uuid,
-              name: repo.name,
-              fullName: repo.full_name,
-              description: repo.description ?? undefined,
-              defaultBranch: repo.mainbranch?.name || "main",
-              isPrivate: repo.is_private ?? false,
-              webUrl: repo.links?.html?.href,
-              sshUrl: repo.links?.clone?.find((link: any) => link.name === "ssh")?.href,
-              httpUrl: repo.links?.clone?.find((link: any) => link.name === "https")?.href,
-            });
-          }
+            for (const repo of data.values) {
+              if (repos.length >= maxItems) {
+                break;
+              }
 
-          if (!data.next) {
-            break;
+              repos.push({
+                id: repo.uuid,
+                name: repo.name,
+                fullName: repo.full_name,
+                description: repo.description ?? undefined,
+                defaultBranch: repo.mainbranch?.name || "main",
+                isPrivate: repo.is_private ?? false,
+                webUrl: repo.links?.html?.href,
+                sshUrl: repo.links?.clone?.find((link: any) => link.name === "ssh")?.href,
+                httpUrl: repo.links?.clone?.find((link: any) => link.name === "https")?.href,
+              });
+            }
+
+            if (!data.next) {
+              break;
+            }
+            page++;
           }
-          page++;
+        } else {
+          // Self-hosted Bitbucket: project-scoped repositories
+          while (repos.length < maxItems) {
+            try {
+              const { data } = await client.projects.repositories({
+                project: organizationName,
+                page,
+                pagelen,
+                q: search ? `name~"${search}"` : undefined,
+              });
+
+              if (!data.values || data.values.length === 0) {
+                break;
+              }
+
+              for (const repo of data.values) {
+                if (repos.length >= maxItems) {
+                  break;
+                }
+
+                repos.push({
+                  id: repo.uuid || repo.id,
+                  name: repo.name,
+                  fullName: repo.full_name || `${organizationName}/${repo.name}`,
+                  description: repo.description ?? undefined,
+                  defaultBranch: repo.mainbranch?.name || "main",
+                  isPrivate: repo.is_private ?? false,
+                  webUrl: repo.links?.html?.href,
+                  sshUrl: repo.links?.clone?.find((link: any) => link.name === "ssh")?.href,
+                  httpUrl: repo.links?.clone?.find((link: any) => link.name === "https")?.href,
+                });
+              }
+
+              if (!data.next) {
+                break;
+              }
+              page++;
+            } catch (error) {
+              // If project repos API is not available, throw a more helpful error
+              throw new Error(`Cannot access repositories for project '${organizationName}'. This might be a Bitbucket Cloud workspace or the project might not exist.`);
+            }
+          }
         }
 
         return repos;
