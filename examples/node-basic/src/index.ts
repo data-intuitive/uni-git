@@ -57,6 +57,31 @@ async function demonstrateGitHubProvider() {
         console.log("  No tags found");
       }
     }
+
+    // Demonstrate organization functionality
+    console.log("\n🏢 Organizations and organization repositories:");
+    try {
+      const orgs = await provider.getOrganizations({ maxItems: 3 });
+      console.log(`Found ${orgs.length} organizations:`);
+      
+      for (const org of orgs) {
+        console.log(`  - ${org.name} (${org.displayName || "no display name"})`);
+        
+        // Get repositories for this organization
+        try {
+          const orgRepos = await provider.getOrganizationRepos(org.name, undefined, { maxItems: 3 });
+          console.log(`    Repositories (${orgRepos.length}): ${orgRepos.map(r => r.name).join(", ")}`);
+        } catch (error) {
+          console.log(`    ⚠️  Could not fetch repositories: ${error instanceof Error ? error.message : error}`);
+        }
+      }
+      
+      if (orgs.length === 0) {
+        console.log("  No organizations found (user may not be a member of any orgs)");
+      }
+    } catch (error) {
+      console.log(`  ⚠️  Could not fetch organizations: ${error instanceof Error ? error.message : error}`);
+    }
   } catch (error) {
     console.error("❌ GitHub demo failed:", error instanceof Error ? error.message : error);
   }
@@ -108,6 +133,31 @@ async function demonstrateGitLabProvider() {
       } else {
         console.log("  No tags found");
       }
+    }
+
+    // Demonstrate groups (organizations) functionality
+    console.log("\n🏢 Groups and group projects:");
+    try {
+      const groups = await provider.getOrganizations({ maxItems: 3 });
+      console.log(`Found ${groups.length} groups:`);
+      
+      for (const group of groups) {
+        console.log(`  - ${group.name} (${group.displayName || "no display name"})`);
+        
+        // Get projects for this group
+        try {
+          const groupProjects = await provider.getOrganizationRepos(group.name, undefined, { maxItems: 3 });
+          console.log(`    Projects (${groupProjects.length}): ${groupProjects.map(r => r.name).join(", ")}`);
+        } catch (error) {
+          console.log(`    ⚠️  Could not fetch projects: ${error instanceof Error ? error.message : error}`);
+        }
+      }
+      
+      if (groups.length === 0) {
+        console.log("  No groups found (user may not be a member of any groups)");
+      }
+    } catch (error) {
+      console.log(`  ⚠️  Could not fetch groups: ${error instanceof Error ? error.message : error}`);
     }
   } catch (error) {
     console.error("❌ GitLab demo failed:", error instanceof Error ? error.message : error);
@@ -161,6 +211,31 @@ async function demonstrateBitbucketProvider() {
       } else {
         console.log("  No tags found");
       }
+    }
+
+    // Demonstrate workspaces (organizations) functionality
+    console.log("\n🏢 Workspaces and workspace repositories:");
+    try {
+      const workspaces = await provider.getOrganizations({ maxItems: 3 });
+      console.log(`Found ${workspaces.length} workspaces:`);
+      
+      for (const workspace of workspaces) {
+        console.log(`  - ${workspace.name} (${workspace.displayName || "no display name"})`);
+        
+        // Get repositories for this workspace
+        try {
+          const workspaceRepos = await provider.getOrganizationRepos(workspace.name, undefined, { maxItems: 3 });
+          console.log(`    Repositories (${workspaceRepos.length}): ${workspaceRepos.map(r => r.name).join(", ")}`);
+        } catch (error) {
+          console.log(`    ⚠️  Could not fetch repositories: ${error instanceof Error ? error.message : error}`);
+        }
+      }
+      
+      if (workspaces.length === 0) {
+        console.log("  No workspaces found");
+      }
+    } catch (error) {
+      console.log(`  ⚠️  Could not fetch workspaces: ${error instanceof Error ? error.message : error}`);
     }
   } catch (error) {
     console.error("❌ Bitbucket demo failed:", error instanceof Error ? error.message : error);

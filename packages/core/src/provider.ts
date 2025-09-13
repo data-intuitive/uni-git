@@ -1,4 +1,4 @@
-import { Repo, ProviderOptions, PaginationOptions } from "./types.js";
+import { Repo, Organization, ProviderOptions, PaginationOptions } from "./types.js";
 
 /**
  * Abstract base class for all Git providers
@@ -21,6 +21,26 @@ export abstract class GitProvider {
    * @returns Promise resolving to array of repositories
    */
   abstract getUserRepos(search?: string, options?: PaginationOptions): Promise<Repo[]>;
+
+  /**
+   * Get organizations/workspaces the authenticated user has access to
+   * @param options Optional pagination options
+   * @returns Promise resolving to array of organizations
+   */
+  abstract getOrganizations(options?: PaginationOptions): Promise<Organization[]>;
+
+  /**
+   * Get repositories within a specific organization/workspace
+   * @param organizationName Name of the organization/workspace
+   * @param search Optional search term to filter repositories
+   * @param options Optional pagination options
+   * @returns Promise resolving to array of repositories
+   */
+  abstract getOrganizationRepos(
+    organizationName: string,
+    search?: string,
+    options?: PaginationOptions
+  ): Promise<Repo[]>;
 
   /**
    * Get branch names for a repository

@@ -23,6 +23,25 @@ export interface Repo {
 }
 
 /**
+ * Common organization/workspace information across all Git providers
+ * Represents GitHub organizations, GitLab groups, and Bitbucket workspaces
+ */
+export interface Organization {
+  /** Unique identifier for the organization */
+  id: string;
+  /** Organization name/slug */
+  name: string;
+  /** Display name of the organization */
+  displayName?: string;
+  /** Organization description */
+  description?: string;
+  /** Web URL for browsing the organization */
+  webUrl?: string;
+  /** User's role in the organization (e.g., 'member', 'admin', 'owner') */
+  role?: string;
+}
+
+/**
  * Common options for all providers
  */
 export interface ProviderOptions {
