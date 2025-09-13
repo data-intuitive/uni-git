@@ -32,6 +32,24 @@ const repos = await provider.getUserRepos();
 const branches = await provider.getRepoBranches("owner/repo");
 const tags = await provider.getRepoTags("owner/repo");
 const repoInfo = await provider.getRepoMetadata("owner/repo");
+
+// Organization/workspace support
+const organizations = await provider.getOrganizations();
+const orgRepos = await provider.getOrganizationRepos("my-org");
+```
+
+### Organization-Aware Workflow
+
+```typescript
+// Discover available organizations/groups/workspaces
+const orgs = await provider.getOrganizations();
+console.log(`Found ${orgs.length} organizations`);
+
+// List repositories in a specific organization
+const orgRepos = await provider.getOrganizationRepos("my-organization");
+
+// Search within organization repositories
+const searchResults = await provider.getOrganizationRepos("my-org", "frontend");
 ```
 
 ### Direct Provider Usage
@@ -132,26 +150,52 @@ const gitlabSelfHosted = new GitLabProvider({
 ```typescript
 import { BitbucketProvider } from "@uni-git/provider-bitbucket";
 
-// App Password (recommended)
-const bitbucket = new BitbucketProvider({
+// Bitbucket Cloud (SaaS) - requires workspace parameter
+const bitbucketCloud = new BitbucketProvider({
   auth: {
     kind: "basic",
     username: "your-username",
     password: "app-password", // NOT your account password
   },
+  workspace: "my-workspace", // Required for Bitbucket Cloud
 });
 
-// OAuth Token
-const bitbucketOAuth = new BitbucketProvider({
+// OAuth Token for Bitbucket Cloud
+const bitbucketCloudOAuth = new BitbucketProvider({
   auth: { kind: "oauth", token: "oauth_token" },
+  workspace: "my-workspace", // Required for Bitbucket Cloud
 });
+
+// Self-hosted Bitbucket (no workspace concept)
+const bitbucketSelfHosted = new BitbucketProvider({
+  auth: {
+    kind: "basic",
+    username: "your-username",
+    password: "your-password",
+  },
+  baseUrl: "https://bitbucket.company.com/api/2.0",
+  // No workspace parameter needed for self-hosted
+});
+
+// Discover available workspaces (Bitbucket Cloud only)
+const workspaces = await bitbucketCloud.listWorkspaces();
+console.log("Available workspaces:", workspaces);
+
+// Get repos from the specified workspace (Cloud) or all repos (self-hosted)
+const repos = await bitbucketCloud.getUserRepos();
+
+// Organization/workspace methods work for both Cloud and self-hosted
+const organizations = await bitbucketCloud.getOrganizations(); // Workspaces for Cloud, Projects for self-hosted
+const orgRepos = await bitbucketCloud.getOrganizationRepos("workspace-or-project-name");
 ```
 
 ## 📚 API Reference
 
 All providers implement the same interface:
 
-### `getRepoMetadata(repoFullName: string): Promise<Repo>`
+### Repository Access
+
+#### `getRepoMetadata(repoFullName: string): Promise<Repo>`
 
 Get detailed metadata for a specific repository.
 
@@ -160,7 +204,7 @@ const repo = await provider.getRepoMetadata("owner/repository");
 console.log(repo.name, repo.defaultBranch, repo.isPrivate);
 ```
 
-### `getUserRepos(search?: string, options?: PaginationOptions): Promise<Repo[]>`
+#### `getUserRepos(search?: string, options?: PaginationOptions): Promise<Repo[]>`
 
 Get repositories for the authenticated user.
 
@@ -168,7 +212,7 @@ Get repositories for the authenticated user.
 const repos = await provider.getUserRepos("my-project", { maxItems: 10 });
 ```
 
-### `getRepoBranches(repoFullName: string, options?: PaginationOptions): Promise<string[]>`
+#### `getRepoBranches(repoFullName: string, options?: PaginationOptions): Promise<string[]>`
 
 Get branch names for a repository.
 
@@ -176,12 +220,36 @@ Get branch names for a repository.
 const branches = await provider.getRepoBranches("owner/repo", { maxItems: 50 });
 ```
 
-### `getRepoTags(repoFullName: string, options?: PaginationOptions): Promise<string[]>`
+#### `getRepoTags(repoFullName: string, options?: PaginationOptions): Promise<string[]>`
 
 Get tag names for a repository.
 
 ```typescript
 const tags = await provider.getRepoTags("owner/repo");
+```
+
+### Organization/Workspace Access
+
+#### `getOrganizations(options?: PaginationOptions): Promise<Organization[]>`
+
+Get organizations, groups, or workspaces the authenticated user has access to.
+
+```typescript
+const orgs = await provider.getOrganizations();
+console.log(`Found ${orgs.length} organizations`);
+orgs.forEach(org => console.log(`- ${org.name}: ${org.displayName}`));
+```
+
+#### `getOrganizationRepos(organizationName: string, search?: string, options?: PaginationOptions): Promise<Repo[]>`
+
+Get repositories within a specific organization/group/workspace.
+
+```typescript
+// List all repositories in an organization
+const orgRepos = await provider.getOrganizationRepos("my-organization");
+
+// Search for specific repositories
+const frontendRepos = await provider.getOrganizationRepos("my-org", "frontend");
 ```
 
 ## 🏗️ Architecture
@@ -297,6 +365,7 @@ We provide comprehensive integration tests that verify real API functionality. T
    ```bash
    export BITBUCKET_USERNAME="your-username"
    export BITBUCKET_APP_PASSWORD="ATBBxxxxxxxxxxxxxxxxxx"
+   export BITBUCKET_WORKSPACE="your-workspace"  # Required for Bitbucket Cloud
    pnpm test:integration:bitbucket
    ```
 
