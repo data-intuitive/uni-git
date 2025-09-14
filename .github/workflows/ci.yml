@@ -95,6 +95,7 @@ jobs:
           # Bitbucket credentials
           BITBUCKET_USERNAME: ${{ secrets.INTEGRATION_BITBUCKET_USERNAME }}
           BITBUCKET_APP_PASSWORD: ${{ secrets.INTEGRATION_BITBUCKET_APP_PASSWORD }}
+          BITBUCKET_WORKSPACE: ${{ secrets.INTEGRATION_BITBUCKET_WORKSPACE }}
           # BITBUCKET_OAUTH_TOKEN: ${{ secrets.INTEGRATION_BITBUCKET_OAUTH_TOKEN }}
           # # Self-hosted instances (optional)
           # GITHUB_BASE_URL: ${{ secrets.INTEGRATION_GITHUB_BASE_URL }}
