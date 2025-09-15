@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { createProvider } from "@uni-git/unified";
+import { createProvider, createProviderWithOrganizations } from "@uni-git/unified";
 
 async function demonstrateGitHubProvider() {
   if (!process.env.GITHUB_TOKEN) {
@@ -43,7 +43,15 @@ async function demonstrateGitHubProvider() {
       
       const repoDetails = await provider.getRepoMetadata(repo.fullName);
       console.log(`  Default branch: ${repoDetails.defaultBranch}`);
-      console.log(`  Clone URL: ${repoDetails.httpUrl}`);
+      if (repoDetails.httpUrl) {
+        console.log(`  Clone URL (HTTPS): ${repoDetails.httpUrl}`);
+      }
+      if (repoDetails.sshUrl) {
+        console.log(`  Clone URL (SSH): ${repoDetails.sshUrl}`);
+      }
+      if (repoDetails.webUrl) {
+        console.log(`  Web URL: ${repoDetails.webUrl}`);
+      }
 
       // Get branches
       const branches = await provider.getRepoBranches(repo.fullName, { maxItems: 5 });
@@ -242,6 +250,52 @@ async function demonstrateBitbucketProvider() {
   }
 }
 
+async function demonstrateOrganizationAwareProvider() {
+  if (!process.env.GITHUB_TOKEN) {
+    console.log("🔶 Skipping organization demo - GITHUB_TOKEN not provided");
+    return;
+  }
+
+  console.log("\n🏢 Organization-Aware Provider Demo");
+  console.log("====================================");
+
+  try {
+    const { provider, organizations } = await createProviderWithOrganizations({
+      type: "github",
+      auth: { kind: "token", token: process.env.GITHUB_TOKEN },
+    });
+
+    console.log("✅ Provider created with pre-loaded organizations");
+    console.log(`📋 Found ${organizations.length} organizations:`);
+
+    for (const org of organizations.slice(0, 3)) {
+      console.log(`\n🏢 Organization: ${org.name}`);
+      console.log(`   Display Name: ${org.displayName || "N/A"}`);
+      console.log(`   Role: ${org.role || "N/A"}`);
+      if (org.description) {
+        console.log(`   Description: ${org.description}`);
+      }
+
+      // Get repositories for this organization
+      try {
+        const orgRepos = await provider.getOrganizationRepos(org.name, undefined, { maxItems: 3 });
+        console.log(`   📁 Repositories (${orgRepos.length}):`);
+        for (const repo of orgRepos) {
+          console.log(`     - ${repo.name} (${repo.isPrivate ? "private" : "public"})`);
+        }
+      } catch (error) {
+        console.log(`   ⚠️  Could not fetch repositories: ${error instanceof Error ? error.message : "Unknown error"}`);
+      }
+    }
+
+    if (organizations.length === 0) {
+      console.log("No organizations found - the user may not be a member of any organizations.");
+    }
+  } catch (error) {
+    console.error("❌ Organization demo failed:", error instanceof Error ? error.message : error);
+  }
+}
+
 async function main() {
   console.log("🚀 Multi-Provider Git API Library Demo");
   console.log("=======================================");
@@ -257,6 +311,7 @@ async function main() {
   await demonstrateGitHubProvider();
   await demonstrateGitLabProvider();
   await demonstrateBitbucketProvider();
+  await demonstrateOrganizationAwareProvider();
 
   console.log("\n✨ Demo completed!");
   console.log("\nNote: The same interface (getRepoMetadata, getUserRepos, getRepoBranches, getRepoTags)");
