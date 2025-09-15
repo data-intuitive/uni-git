@@ -15,6 +15,9 @@
     "test:integration:gitlab": "pnpm --filter '@uni-git/provider-gitlab' run test:integration",
     "test:integration:bitbucket": "pnpm --filter '@uni-git/provider-bitbucket' run test:integration",
     "test:integration:unified": "pnpm --filter '@uni-git/unified' run test:integration",
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish",
     "release": "changeset version && pnpm install && pnpm -r build && changeset publish"
   },
   "devDependencies": {
