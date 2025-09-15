@@ -1,6 +1,6 @@
 {
   "name": "@uni-git/provider-bitbucket",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Bitbucket provider for unified Git API with support for Bitbucket Cloud and Bitbucket Server/Data Center. Supports app passwords, OAuth tokens, and basic authentication.",
   "type": "module",
   "main": "./dist/index.js",
@@ -30,7 +30,7 @@
     "typescript",
     "provider",
     "cloud",
-    "server", 
+    "server",
     "data-center",
     "workspaces",
     "projects",

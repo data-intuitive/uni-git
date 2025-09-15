@@ -1,6 +1,6 @@
 {
   "name": "@uni-git/provider-github",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "GitHub provider for unified Git API with support for GitHub.com and GitHub Enterprise Server. Supports personal access tokens, fine-grained tokens, and GitHub Apps.",
   "type": "module",
   "main": "./dist/index.js",

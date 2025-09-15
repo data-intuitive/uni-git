@@ -1,6 +1,6 @@
 {
   "name": "@uni-git/core",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Core types, interfaces, error classes, and utilities for unified Git provider API. Foundation package for GitHub, GitLab, and Bitbucket integration.",
   "type": "module",
   "main": "./dist/index.js",
@@ -46,7 +46,7 @@
   "homepage": "https://github.com/data-intuitive/uni-git#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/data-intuitive/uni-git.git", 
+    "url": "https://github.com/data-intuitive/uni-git.git",
     "directory": "packages/core"
   },
   "bugs": {
