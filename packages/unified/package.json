@@ -1,7 +1,7 @@
 {
   "name": "@uni-git/unified",
   "version": "0.0.1",
-  "description": "Unified interface for all Git providers",
+  "description": "Unified factory for creating Git providers with automatic organization discovery and enhanced convenience features. Supports GitHub, GitLab, and Bitbucket through a consistent API.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,7 +12,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -25,14 +26,33 @@
   "keywords": [
     "git",
     "github",
-    "gitlab",
+    "gitlab", 
     "bitbucket",
     "api",
     "typescript",
-    "unified"
+    "unified",
+    "factory",
+    "provider",
+    "organization",
+    "repository",
+    "enterprise",
+    "self-hosted",
+    "multi-platform"
   ],
-  "author": "Data Intuitive",
+  "author": {
+    "name": "Data Intuitive",
+    "url": "https://data-intuitive.com"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/data-intuitive/uni-git#readme",
+  "repository": {
+    "type": "git", 
+    "url": "https://github.com/data-intuitive/uni-git.git",
+    "directory": "packages/unified"
+  },
+  "bugs": {
+    "url": "https://github.com/data-intuitive/uni-git/issues"
+  },
   "sideEffects": false,
   "engines": {
     "node": ">=18"

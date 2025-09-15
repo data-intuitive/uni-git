@@ -1,7 +1,7 @@
 {
   "name": "@uni-git/provider-bitbucket",
   "version": "0.0.1",
-  "description": "Bitbucket provider for unified Git API",
+  "description": "Bitbucket provider for unified Git API with support for Bitbucket Cloud and Bitbucket Server/Data Center. Supports app passwords, OAuth tokens, and basic authentication.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,7 +12,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -26,10 +27,31 @@
     "git",
     "bitbucket",
     "api",
-    "typescript"
+    "typescript",
+    "provider",
+    "cloud",
+    "server", 
+    "data-center",
+    "workspaces",
+    "projects",
+    "app-password",
+    "oauth",
+    "basic-auth"
   ],
-  "author": "Data Intuitive",
+  "author": {
+    "name": "Data Intuitive",
+    "url": "https://data-intuitive.com"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/data-intuitive/uni-git#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/data-intuitive/uni-git.git",
+    "directory": "packages/provider-bitbucket"
+  },
+  "bugs": {
+    "url": "https://github.com/data-intuitive/uni-git/issues"
+  },
   "sideEffects": false,
   "engines": {
     "node": ">=18"

@@ -1,7 +1,7 @@
 {
   "name": "@uni-git/provider-github",
   "version": "0.0.1",
-  "description": "GitHub provider for unified Git API",
+  "description": "GitHub provider for unified Git API with support for GitHub.com and GitHub Enterprise Server. Supports personal access tokens, fine-grained tokens, and GitHub Apps.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,7 +12,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -26,10 +27,31 @@
     "git",
     "github",
     "api",
-    "typescript"
+    "typescript",
+    "provider",
+    "enterprise",
+    "organization",
+    "repository",
+    "octokit",
+    "github-api",
+    "github-apps",
+    "personal-access-token",
+    "fine-grained-token"
   ],
-  "author": "Data Intuitive",
+  "author": {
+    "name": "Data Intuitive",
+    "url": "https://data-intuitive.com"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/data-intuitive/uni-git#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/data-intuitive/uni-git.git",
+    "directory": "packages/provider-github"
+  },
+  "bugs": {
+    "url": "https://github.com/data-intuitive/uni-git/issues"
+  },
   "sideEffects": false,
   "engines": {
     "node": ">=18"
