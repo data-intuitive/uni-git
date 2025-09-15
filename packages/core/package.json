@@ -1,7 +1,7 @@
 {
   "name": "@uni-git/core",
   "version": "0.0.1",
-  "description": "Core interfaces and types for unified Git provider API",
+  "description": "Core types, interfaces, error classes, and utilities for unified Git provider API. Foundation package for GitHub, GitLab, and Bitbucket integration.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,7 +12,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -27,10 +28,30 @@
     "gitlab",
     "bitbucket",
     "api",
-    "typescript"
+    "typescript",
+    "core",
+    "types",
+    "interfaces",
+    "errors",
+    "utilities",
+    "foundation",
+    "provider",
+    "repository"
   ],
-  "author": "Data Intuitive",
+  "author": {
+    "name": "Data Intuitive",
+    "url": "https://data-intuitive.com"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/data-intuitive/uni-git#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/data-intuitive/uni-git.git", 
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/data-intuitive/uni-git/issues"
+  },
   "sideEffects": false,
   "engines": {
     "node": ">=18"
