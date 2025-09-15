@@ -1,6 +1,6 @@
 {
   "name": "@uni-git/provider-gitlab",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "GitLab provider for unified Git API with support for GitLab.com and self-hosted GitLab instances. Supports personal access tokens, OAuth tokens, and job tokens.",
   "type": "module",
   "main": "./dist/index.js",
